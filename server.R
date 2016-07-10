@@ -49,6 +49,7 @@ server <- function(input, output, session) {
       
       
       ### Define the list and characteristics of variables
+      names(data)<- make.names(names(data), unique = T)
       var<- names(data)
       type<- sapply(data, class)
       var_numeric<- var[which(type %in% c("numeric","integer"))]
@@ -90,8 +91,7 @@ server <- function(input, output, session) {
     updateSelectInput(session = session, inputId = "offset_var", choices = c("",var_numeric))
     updateSelectInput(session = session, inputId = "weight_var", choices = c("",var_numeric))
     updateSelectInput(session = session, inputId = "group_var", choices = c("",vars_group))
-    #updateSelectInput(session = session, inputId = "group_gam_var", choices = c("", "model", vars_group))
-    
+
     updateSelectInput(session = session, inputId = "var_numeric", choices = c("", var_numeric))
     updateSelectInput(session = session, inputId = "var_factor", choices = c("", var_factor))
   })
@@ -237,7 +237,6 @@ server <- function(input, output, session) {
              weight_cum_target=cumsum(weight),
              weight_prop_target=weight_cum_target/sum(weight))
     
-    #sum((data_valid$weight_prop-data_valid$target_prop)*data_valid$weight/sum(data_valid$weight))
     AUC<- NormalizedGini(solution = data$target, submission = data$model)
     
     rows<- unique(round(quantile(1:nrow(auc_model), probs = 0:100/100),0))
@@ -245,10 +244,10 @@ server <- function(input, output, session) {
     auc_target<- auc_target[rows, ]
     
     plot<- highchart() %>% 
-      hc_chart(zoomType= 'xy') %>% 
-      hc_add_series(data = list.parse2(data.frame(x=c(0,1), y=c(0,1))), name = "baseline", type="line") %>% 
-      hc_add_series(data = list.parse2(auc_target[c("weight_prop_target","target_prop")]), name = "target", type="line") %>% 
-      hc_add_series(data = list.parse2(auc_model[c("weight_prop_model","model_prop")]), name = "model", type="line") %>% 
+      hc_chart(zoomType= 'xy', animation=F) %>% 
+      hc_add_series(animation=F, data = list.parse2(data.frame(x=c(0,1), y=c(0,1))), name = "baseline", type="line") %>% 
+      hc_add_series(animation=F, data = list.parse2(auc_target[c("weight_prop_target","target_prop")]), name = "target", type="line") %>% 
+      hc_add_series(animation=F, data = list.parse2(auc_model[c("weight_prop_model","model_prop")]), name = "model", type="line") %>% 
       hc_title(text = paste("<b>AUC train</b><br>", signif(AUC,4),sep="")) %>% 
       hc_colors(c("black","gray","lightblue")) %>% 
       hc_exporting(enabled = TRUE)
@@ -274,7 +273,6 @@ server <- function(input, output, session) {
              weight_cum_target=cumsum(weight),
              weight_prop_target=weight_cum_target/sum(weight))
     
-    #sum((data_valid$weight_prop-data_valid$target_prop)*data_valid$weight/sum(data_valid$weight))
     AUC<- NormalizedGini(solution = data$target, submission = data$model)
     
     rows<- unique(round(quantile(1:nrow(auc_model), probs = 0:100/100),0))
@@ -282,10 +280,10 @@ server <- function(input, output, session) {
     auc_target<- auc_target[rows, ]
     
     plot<- highchart() %>% 
-      hc_chart(zoomType= 'xy') %>% 
-      hc_add_series(data = list.parse2(data.frame(x=c(0,1), y=c(0,1))), name = "baseline", type="line") %>% 
-      hc_add_series(data = list.parse2(auc_target[c("weight_prop_target","target_prop")]), name = "target", type="line") %>% 
-      hc_add_series(data = list.parse2(auc_model[c("weight_prop_model","model_prop")]), name = "model", type="line") %>% 
+      hc_chart(zoomType= 'xy', animation=F) %>% 
+      hc_add_series(animation=F, data = list.parse2(data.frame(x=c(0,1), y=c(0,1))), name = "baseline", type="line") %>% 
+      hc_add_series(animation=F, data = list.parse2(auc_target[c("weight_prop_target","target_prop")]), name = "target", type="line") %>% 
+      hc_add_series(animation=F, data = list.parse2(auc_model[c("weight_prop_model","model_prop")]), name = "model", type="line") %>% 
       hc_title(text = paste("<b>AUC test</b><br>", signif(AUC,4),sep="")) %>% 
       hc_colors(c("black","gray","lightblue")) %>% 
       hc_exporting(enabled = TRUE)
@@ -309,7 +307,7 @@ server <- function(input, output, session) {
     if (input$group_gam_var %in% gam_fitting()$var_numeric) {
       bins<- input$gam_bins
       if (bins<length(unique(data$grouping))) {
-        data$grouping<- cut(data$grouping, breaks = unique(quantile(data$grouping, probs = (0:bins)/bins)), include.lowest = T)
+        data$grouping<- cut(data$grouping, breaks = unique(quantile(data$grouping, probs = (0:bins)/bins, na.rm = T)), include.lowest = T)
       }
     } 
     
@@ -354,29 +352,29 @@ server <- function(input, output, session) {
     if (title %in% gam_fitting()$var_numeric) {
       
       plot<- highchart() %>% 
-        hc_chart(zoomType= 'xy') %>% 
+        hc_chart(zoomType= 'xy', animation=F) %>% 
         hc_yAxis(
           list(title = list(text = "Target"), align = "left"),
           list(title = list(text = "Weight"), align = "right", opposite=TRUE)
         ) %>% 
         hc_xAxis(categories = data_plot$grouping) %>% 
-        hc_add_series(data = data_plot$weight, name = "weight", type="column", yAxis=1) %>% 
-        hc_add_series(data = data_plot$target, name = "target", type="line", yAxis=0) %>% 
-        hc_add_series(data = data_plot$model, name = "model", type="line", yAxis=0) %>% 
+        hc_add_series(animation=F, data = data_plot$weight, name = "weight", type="column", yAxis=1) %>% 
+        hc_add_series(animation=F, data = data_plot$target, name = "target", type="line", yAxis=0) %>% 
+        hc_add_series(animation=F, data = data_plot$model, name = "model", type="line", yAxis=0) %>% 
         hc_colors(c("lightgray","lightblue","navy")) %>% 
         hc_exporting(enabled = TRUE)
       
     } else {
       plot<- highchart() %>% 
-        hc_chart(zoomType= 'xy') %>% 
+        hc_chart(zoomType= 'xy', animation=list(duration=0)) %>% 
         hc_yAxis(
           list(title = list(text = "Target"), align = "left"),
           list(title = list(text = "Weight"), align = "right", opposite=TRUE)
         ) %>% 
         hc_xAxis(categories = data_plot$grouping) %>% 
-        hc_add_series(data = data_plot$weight, name = "weight", type="column", yAxis=1) %>% 
-        hc_add_series(data = data_plot$target, name = "target", type="scatter", yAxis=0) %>% 
-        hc_add_series(data = data_plot$model, name = "model", type="scatter", yAxis=0) %>% 
+        hc_add_series(animation=F, data = data_plot$weight, name = "weight", type="column", yAxis=1) %>% 
+        hc_add_series(animation=F, data = data_plot$target, name = "target", type="scatter", yAxis=0) %>% 
+        hc_add_series(animation=F, data = data_plot$model, name = "model", type="scatter", yAxis=0) %>% 
         hc_colors(c("lightgray","lightblue","navy")) %>% 
         hc_exporting(enabled = TRUE)
     }
@@ -396,29 +394,29 @@ server <- function(input, output, session) {
     if (title %in% gam_fitting()$var_numeric) {
       
       plot<- highchart() %>% 
-        hc_chart(zoomType= 'xy') %>% 
+        hc_chart(zoomType= 'xy', animation=F) %>% 
         hc_yAxis(
           list(title = list(text = "Target"), align = "left"),
           list(title = list(text = "Weight"), align = "right", opposite=TRUE)
         ) %>% 
         hc_xAxis(categories = data_plot$grouping) %>% 
-        hc_add_series(data = data_plot$weight, name = "weight", type="column", yAxis=1) %>% 
-        hc_add_series(data = data_plot$target, name = "target", type="line", yAxis=0) %>% 
-        hc_add_series(data = data_plot$model, name = "model", type="line", yAxis=0) %>% 
+        hc_add_series(animation=F, data = data_plot$weight, name = "weight", type="column", yAxis=1) %>% 
+        hc_add_series(animation=F, data = data_plot$target, name = "target", type="line", yAxis=0) %>% 
+        hc_add_series(animation=F, data = data_plot$model, name = "model", type="line", yAxis=0) %>% 
         hc_colors(c("lightgray","lightblue","navy")) %>% 
         hc_exporting(enabled = TRUE)
       
     } else {
       plot<- highchart() %>% 
-        hc_chart(zoomType= 'xy') %>% 
+        hc_chart(zoomType= 'xy', animation=F) %>% 
         hc_yAxis(
           list(title = list(text = "Target"), align = "left"),
           list(title = list(text = "Weight"), align = "right", opposite=TRUE)
           ) %>% 
         hc_xAxis(categories = data_plot$grouping) %>% 
-        hc_add_series(data = data_plot$weight, name = "weight", type="column", yAxis=1) %>% 
-        hc_add_series(data = data_plot$target, name = "target", type="scatter", yAxis=0) %>% 
-        hc_add_series(data = data_plot$model, name = "model", type="scatter", yAxis=0) %>% 
+        hc_add_series(animation=F, data = data_plot$weight, name = "weight", type="column", yAxis=1) %>% 
+        hc_add_series(animation=F, data = data_plot$target, name = "target", type="scatter", yAxis=0) %>% 
+        hc_add_series(animation=F, data = data_plot$model, name = "model", type="scatter", yAxis=0) %>% 
         hc_colors(c("lightgray","lightblue","navy")) %>% 
         hc_exporting(enabled = TRUE)
     }
